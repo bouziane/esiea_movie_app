@@ -9,6 +9,8 @@ class HttpHelper {
   final String urlLanguage = "&language=fr-FR";
 
   Future<List<Movie>> getUpComing() async {
+    await Future.delayed(const Duration(seconds: 5)); // To test spinner
+
     final String url = "$urlBase$urlUpComing$apiKey$urlLanguage";
     http.Response result = await http.get(Uri.parse(url));
 
