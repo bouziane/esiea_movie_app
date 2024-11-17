@@ -17,5 +17,17 @@ class MovieBloc extends Bloc<MoviesEvent, MoviesState> {
         emit(MoviesError("Erreur lors du chargement des films"));
       }
     });
+
+    on<SearchMovies>((event, emit) async {
+      emit(MoviesLoading());
+      print("Recherche en cours avec le terme : ${event.query}");
+      try {
+        final movies = await httpHelper.searchMovies(event.query);
+        emit(MoviesLoaded(movies));
+      } catch (e) {
+        print("Erreur lors de la recherche : $e");
+        emit(MoviesError("Impossible de rechercher les films."));
+      }
+    });
   }
 }

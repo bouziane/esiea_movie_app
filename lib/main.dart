@@ -14,16 +14,18 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return BlocProvider(
+      create: (context) => MovieBloc(HttpHelper())..add(FetchUpcomingMovies()),
+      child: MaterialApp(
+        title: 'Movies App',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          useMaterial3: true,
+        ),
+        home: const HomePage(),
       ),
-      home: const HomePage(),
     );
   }
 }
@@ -33,50 +35,70 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => MovieBloc(HttpHelper())..add(FetchUpcomingMovies()),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Upcoming Movies'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Upcoming Movies'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(50.0),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: SearchBar(),
+          ),
         ),
-        body: BlocBuilder<MovieBloc, MoviesState>(
-          builder: (context, state) {
-            
-            // Loading
-            if (state is MoviesInitial || state is MoviesLoading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-
-            // Movie fetch success
-            } else if (state is MoviesLoaded) {
-              return ListView.builder(
-                itemCount: state.movies.length,
-                itemBuilder: (context, index) {
-                  Movie movie = state.movies[index];
-
-                  return ListTile(
-                    leading: Image.network(movie.posterPath),
-                    title: Text(movie.title),
-                    subtitle: Text("Sortie : ${movie.releaseDate}"),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MovieDetail(movie: movie),
-                      ),
+      ),
+      body: BlocBuilder<MovieBloc, MoviesState>(
+        builder: (context, state) {
+          if (state is MoviesInitial || state is MoviesLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (state is MoviesLoaded) {
+            return ListView.builder(
+              itemCount: state.movies.length,
+              itemBuilder: (context, index) {
+                Movie movie = state.movies[index];
+                return ListTile(
+                  leading: Image.network(movie.posterPath),
+                  title: Text(movie.title),
+                  subtitle: Text("Sortie : ${movie.releaseDate}"),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MovieDetail(movie: movie),
                     ),
-                  );
-                },
-              );
+                  ),
+                );
+              },
+            );
+          } else if (state is MoviesError) {
+            return Center(
+              child: Text(state.message),
+            );
+          }
+          return Container();
+        },
+      ),
+    );
+  }
+}
 
-            // Movie fetch error
-            } else if (state is MoviesError) {
-              return Center(
-                child: Text(state.message),
-              );
-            }
-            return Container();
-          },
+class SearchBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      onChanged: (query) {
+        if (query.isNotEmpty) {
+          context.read<MovieBloc>().add(SearchMovies(query));
+        } else {
+          context.read<MovieBloc>().add(FetchUpcomingMovies());
+        }
+      },
+      decoration: InputDecoration(
+        hintText: 'Rechercher un film...',
+        prefixIcon: const Icon(Icons.search),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: const BorderSide(color: Colors.grey),
         ),
       ),
     );
