@@ -4,6 +4,7 @@ import 'package:movies_app/movie.dart';
 
 class HttpHelper {
   final String urlBase = "https://api.themoviedb.org/3/movie";
+  final String urlSearch = "/search/movie?";
   final String urlUpComing = "/upcoming?";
   final String apiKey = "api_key=bf6726965abb1371175e4fe3de923c5b";
   final String urlLanguage = "&language=fr-FR";
@@ -12,6 +13,21 @@ class HttpHelper {
     await Future.delayed(const Duration(seconds: 5)); // To test spinner
 
     final String url = "$urlBase$urlUpComing$apiKey$urlLanguage";
+    http.Response result = await http.get(Uri.parse(url));
+
+    if (result.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = json.decode(result.body);
+      final List moviesMap = jsonResponse["results"];
+      List<Movie> movies =
+          moviesMap.map((json) => Movie.fromJson(json)).toList();
+      return movies;
+    } else {
+      return [];
+    }
+  }
+
+  Future<List<Movie>> searchMovies(String query) async {
+    final String url = "$urlBase$urlSearch$apiKey$urlLanguage&query=${Uri.encodeComponent(query)}";
     http.Response result = await http.get(Uri.parse(url));
 
     if (result.statusCode == 200) {
